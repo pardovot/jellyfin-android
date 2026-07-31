@@ -131,13 +131,6 @@ object Constants {
     val ASPECT_RATIO_16_9 = Rational(16, 9)
     val PIP_MIN_RATIONAL = Rational(100, 239)
     val PIP_MAX_RATIONAL = Rational(239, 100)
-    const val SUPPORTED_VIDEO_PLAYER_PLAYBACK_ACTIONS: Long = PlaybackState.ACTION_PLAY_PAUSE or
-        PlaybackState.ACTION_PLAY or
-        PlaybackState.ACTION_PAUSE or
-        PlaybackState.ACTION_SEEK_TO or
-        PlaybackState.ACTION_REWIND or
-        PlaybackState.ACTION_FAST_FORWARD or
-        PlaybackState.ACTION_STOP
     const val VIDEO_PLAYER_NOTIFICATION_ID = 99
     const val DOWNLOAD_NOTIFICATION_ID = 80
     const val MAX_SKIP_TO_PREV_CHAPTER_MS = 10_000L

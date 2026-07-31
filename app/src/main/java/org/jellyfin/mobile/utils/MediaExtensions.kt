@@ -4,10 +4,10 @@ package org.jellyfin.mobile.utils
 
 import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import androidx.media3.common.C
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.analytics.AnalyticsCollector
 import org.jellyfin.mobile.player.source.JellyfinMediaSource
@@ -27,15 +27,16 @@ inline fun MediaSession.applyDefaultLocalAudioAttributes(contentType: Int) {
     setPlaybackToLocal(audioAttributes)
 }
 
+/**
+ * Metadata for the media session, used to populate the media notification
+ */
 fun JellyfinMediaSource.toMediaMetadata(): MediaMetadata = MediaMetadata.Builder().apply {
-    putString(MediaMetadata.METADATA_KEY_MEDIA_ID, itemId.toString())
-    putString(MediaMetadata.METADATA_KEY_TITLE, item?.name ?: sourceInfo.name.orEmpty())
-    item?.artists?.joinToString()?.let { artists ->
-        putString(MediaMetadata.METADATA_KEY_ARTIST, artists)
-    }
-    putLong(MediaMetadata.METADATA_KEY_DURATION, runTime.inWholeMilliseconds)
-    val imageUri = ImageProvider.buildItemUri(itemId, ImageType.PRIMARY, item?.imageTags?.get(ImageType.PRIMARY))
-    putString(MediaMetadata.METADATA_KEY_ART_URI, imageUri.toString())
+    setTitle(item?.name ?: sourceInfo.name.orEmpty())
+    item?.artists?.joinToString()?.let(::setArtist)
+    setDurationMs(runTime.inWholeMilliseconds)
+    setArtworkUri(ImageProvider.buildItemUri(itemId, ImageType.PRIMARY, item?.imageTags?.get(ImageType.PRIMARY)))
+    setIsBrowsable(false)
+    setIsPlayable(true)
 }.build()
 
 fun MediaSession.setPlaybackState(playbackState: Int, position: Long, playbackActions: Long) {
@@ -52,16 +53,6 @@ fun MediaSession.setPlaybackState(isPlaying: Boolean, position: Long, playbackAc
         position,
         playbackActions,
     )
-}
-
-fun MediaSession.setPlaybackState(player: Player, playbackActions: Long) {
-    val playbackState = when (val playerState = player.playbackState) {
-        Player.STATE_IDLE, Player.STATE_ENDED -> PlaybackState.STATE_NONE
-        Player.STATE_READY -> if (player.isPlaying) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
-        Player.STATE_BUFFERING -> PlaybackState.STATE_BUFFERING
-        else -> error("Invalid player playbackState $playerState")
-    }
-    setPlaybackState(playbackState, player.currentPosition, playbackActions)
 }
 
 fun AudioManager.getVolumeRange(streamType: Int): IntRange {

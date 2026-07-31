@@ -115,7 +115,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
             val safeMessage = message.ifEmpty { requireContext().getString(R.string.player_error_unspecific_exception) }
             requireContext().toast(safeMessage)
         }
-        viewModel.queueManager.currentMediaSource.observe(this) { mediaSource ->
+        viewModel.currentMediaSource.observe(this) { mediaSource ->
             if (mediaSource.selectedVideoStream?.isLandscape == false) {
                 // For portrait videos, immediately enable fullscreen
                 playerFullscreenHelper.enableFullscreen()
@@ -126,7 +126,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
 
             // Update title and player menus
             toolbar.title = mediaSource.getName(requireContext())
-            playerMenus?.onQueueItemChanged(mediaSource, viewModel.queueManager.hasNext())
+            playerMenus?.onQueueItemChanged(mediaSource, viewModel.hasNext())
         }
 
         // Handle fragment arguments, extract playback options and start playback
@@ -137,7 +137,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
                 context.toast(R.string.player_error_invalid_play_options)
                 return@launch
             }
-            when (viewModel.queueManager.initializePlaybackQueue(playOptions)) {
+            when (viewModel.initializePlaybackQueue(playOptions)) {
                 is PlayerException.InvalidPlayOptions -> context.toast(R.string.player_error_invalid_play_options)
                 is PlayerException.NetworkFailure -> context.toast(R.string.player_error_network_failure)
                 is PlayerException.UnsupportedContent -> context.toast(R.string.player_error_unsupported_content)
@@ -232,7 +232,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         }
 
         // If playback ended during picture in picture we'll return to the main app when PiP is closed
-        if (viewModel.playerOrNull == null) {
+        if (viewModel.isPlaybackFinished) {
             parentFragmentManager.popBackStack()
         }
     }
@@ -304,7 +304,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
      * @param callback called if track selection was successful and UI needs to be updated
      */
     fun onAudioTrackSelected(index: Int, callback: TrackSelectionCallback): Job = lifecycleScope.launch {
-        if (viewModel.trackSelectionHelper.selectAudioTrack(index)) {
+        if (viewModel.selectAudioTrack(index)) {
             callback.onTrackSelected(true)
         }
     }
@@ -313,7 +313,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
      * @param callback called if track selection was successful and UI needs to be updated
      */
     fun onSubtitleSelected(index: Int, callback: TrackSelectionCallback): Job = lifecycleScope.launch {
-        if (viewModel.trackSelectionHelper.selectSubtitleTrack(index)) {
+        if (viewModel.selectSubtitleTrack(index)) {
             callback.onTrackSelected(true)
         }
     }
@@ -324,7 +324,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
      * @return true if subtitles are enabled now, false if not
      */
     fun toggleSubtitles(callback: TrackSelectionCallback) = lifecycleScope.launch {
-        callback.onTrackSelected(viewModel.trackSelectionHelper.toggleSubtitles())
+        callback.onTrackSelected(viewModel.toggleSubtitles())
     }
 
     fun onBitrateChanged(bitrate: Int?, callback: TrackSelectionCallback) = lifecycleScope.launch {

@@ -13,11 +13,11 @@ import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 
 class TrackSelectionHelper(
-    private val viewModel: PlayerViewModel,
+    private val playbackService: PlaybackService,
     private val trackSelector: DefaultTrackSelector,
 ) {
     private val mediaSourceOrNull: JellyfinMediaSource?
-        get() = viewModel.mediaSourceOrNull
+        get() = playbackService.mediaSourceOrNull
 
     fun selectInitialTracks() {
         val mediaSource = mediaSourceOrNull ?: return
@@ -41,11 +41,11 @@ class TrackSelectionHelper(
 
         // For transcoding and external streams, we need to restart playback
         if (mediaSource.playMethod == PlayMethod.TRANSCODE || selectedMediaStream.isExternal) {
-            return viewModel.queueManager.selectAudioStreamAndRestartPlayback(selectedMediaStream)
+            return playbackService.queueManager.selectAudioStreamAndRestartPlayback(selectedMediaStream)
         }
 
         return selectPlayerAudioTrack(mediaSource, selectedMediaStream, initial = false).also { success ->
-            if (success) viewModel.logTracks()
+            if (success) playbackService.logTracks()
         }
     }
 
@@ -73,7 +73,7 @@ class TrackSelectionHelper(
             !mediaSource.selectAudioStream(audioStream) -> return false
         }
 
-        val player = viewModel.playerOrNull ?: return false
+        val player = playbackService.playerOrNull ?: return false
         val embeddedStreamIndex = mediaSource.getEmbeddedStreamIndex(audioStream)
         val sortedTrackGroups = player.currentTracks.groups.sortedBy { group ->
             val formatId = group.mediaTrackGroup.getFormat(0).id
@@ -93,7 +93,7 @@ class TrackSelectionHelper(
      * @return true if the subtitle was changed
      */
     suspend fun selectSubtitleTrack(mediaStreamIndex: Int): Boolean {
-        val mediaSource = viewModel.mediaSourceOrNull ?: return false
+        val mediaSource = playbackService.mediaSourceOrNull ?: return false
         val selectedMediaStream = mediaSource.mediaStreams.getOrNull(mediaStreamIndex)
         require(selectedMediaStream == null || selectedMediaStream.type == MediaStreamType.SUBTITLE)
 
@@ -103,11 +103,11 @@ class TrackSelectionHelper(
             selectedMediaStream?.deliveryMethod == SubtitleDeliveryMethod.ENCODE ||
             mediaSource.selectedSubtitleStream?.deliveryMethod == SubtitleDeliveryMethod.ENCODE
         ) {
-            return viewModel.queueManager.selectSubtitleStreamAndRestartPlayback(selectedMediaStream)
+            return playbackService.queueManager.selectSubtitleStreamAndRestartPlayback(selectedMediaStream)
         }
 
         return selectSubtitleTrack(mediaSource, selectedMediaStream, initial = false).also { success ->
-            if (success) viewModel.logTracks()
+            if (success) playbackService.logTracks()
         }
     }
 
@@ -137,7 +137,7 @@ class TrackSelectionHelper(
             return true
         }
 
-        val player = viewModel.playerOrNull ?: return false
+        val player = playbackService.playerOrNull ?: return false
         val deliveryMethod = when (mediaSource) {
             is LocalJellyfinMediaSource -> when {
                 subtitleStream.isExternal -> SubtitleDeliveryMethod.EXTERNAL
